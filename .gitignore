@@ -1,0 +1,42 @@
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node.js dependencies and logs
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+**/dist/** 
+build/
+coverage/
+**/dist/
+**/build/
+**/coverage/
+
+# TypeScript / Vite caches
+*.tsbuildinfo
+**/*.tsbuildinfo
+.vite/
+**/.vite/
+
+# Local runtime files
+tmp/
+temp/
+.cache/
+*.log
+
+# Docker / database local artifacts
+postgres-data/
+docker-data/
+
+# IDE files
+.idea/
+.vscode/
