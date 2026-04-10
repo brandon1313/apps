@@ -40,7 +40,6 @@ export function NewsSection() {
               className="poster-logo-panel__logo"
             />
             <div>
-              <span className="poster-kicker">Logotipo oficial</span>
               <p className="poster-logo-panel__title">Municipalidad de San Juan Sacatepequez</p>
               <Link to="/news">Ver todas las noticias</Link>
             </div>

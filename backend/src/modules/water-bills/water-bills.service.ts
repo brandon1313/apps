@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { ILike, Repository } from 'typeorm'
 import { PaymentsService } from '@/modules/payments/payments.service'
@@ -9,6 +9,8 @@ import { WaterBillEntity, WaterBillStatus } from './entities/water-bill.entity'
 
 @Injectable()
 export class WaterBillsService {
+  private readonly logger = new Logger(WaterBillsService.name)
+
   constructor(
     @InjectRepository(WaterAccountEntity)
     private readonly accountsRepository: Repository<WaterAccountEntity>,
@@ -18,6 +20,7 @@ export class WaterBillsService {
   ) {}
 
   async search(dto: SearchWaterBillsDto): Promise<WaterBillEntity[]> {
+    this.logger.log(`Water bill search: meterNumber=${dto.meterNumber ?? '-'} address=${dto.address ?? '-'} holder=${dto.accountHolderName ?? '-'}`)
     await this.seedDemoData()
 
     const queryBuilder = this.accountsRepository.createQueryBuilder('account')
@@ -43,6 +46,7 @@ export class WaterBillsService {
     const account = await queryBuilder.getOne()
 
     if (!account) {
+      this.logger.warn(`Water bill search: no account found for query`)
       return []
     }
 
@@ -53,6 +57,7 @@ export class WaterBillsService {
   }
 
   async payBill(id: string, userId?: string): Promise<WaterBillEntity> {
+    this.logger.log(`Water bill payment initiated: billId=${id} userId=${userId ?? 'anonymous'}`)
     const bill = await this.billsRepository.findOneOrFail({ where: { id } })
     const payment = await this.paymentsService.createPendingPayment({
       type: PaymentType.WATER_BILL,
@@ -66,7 +71,9 @@ export class WaterBillsService {
     const completedPayment = await this.paymentsService.executeMockPayment(payment)
     bill.status = WaterBillStatus.PAID
     bill.paymentId = completedPayment.id
-    return this.billsRepository.save(bill)
+    const saved = await this.billsRepository.save(bill)
+    this.logger.log(`Water bill paid: billId=${id} paymentRef=${completedPayment.reference}`)
+    return saved
   }
 
   private async seedDemoData(): Promise<void> {

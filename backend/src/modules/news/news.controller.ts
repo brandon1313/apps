@@ -9,7 +9,7 @@ import { Role } from '@/common/enums/role.enum'
 import { CreateNewsDto } from './dto/create-news.dto'
 import { UpdateNewsStatusDto } from './dto/update-news-status.dto'
 
-@SkipThrottle()
+@SkipThrottle({ default: true, auth: true })
 @Controller()
 export class NewsController {
   constructor(private readonly newsService: NewsService) {}

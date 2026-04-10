@@ -31,6 +31,7 @@ export function typeOrmOptionsFactory(configService: ConfigService): TypeOrmModu
     migrations: ['dist/database/migrations/*.js'],
     synchronize: false,
     logging: false,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   }
 }
 
@@ -53,6 +54,7 @@ export const dataSourceOptions: DataSourceOptions = {
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: false,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 }
 
 export default new DataSource(dataSourceOptions)

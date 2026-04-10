@@ -5,6 +5,7 @@ const port = Number(process.env.DATABASE_PORT || 5432)
 const database = process.env.DATABASE_NAME || 'municipal_platform'
 const user = process.env.DATABASE_USER || 'postgres'
 const password = process.env.DATABASE_PASSWORD || 'postgres'
+const ssl = process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 const maxAttempts = 30
 const delayMs = 2000
 
@@ -20,6 +21,7 @@ async function main() {
       database,
       user,
       password,
+      ...(ssl && { ssl }),
     })
 
     try {

@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -24,6 +25,13 @@ type AuthTokens = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
+  private static maskEmail(email: string): string {
+    const [local, domain] = email.split('@')
+    return `${local[0]}***@${domain}`
+  }
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -35,19 +43,39 @@ export class AuthService {
     const existingUser = await this.usersService.findByEmail(dto.email)
 
     if (existingUser) {
+      this.logger.warn(`Registration failed: email already registered [${AuthService.maskEmail(dto.email)}]`)
       throw new ConflictException('Email already registered')
     }
 
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id })
-    const user = await this.usersService.create({
-      fullName: dto.fullName,
-      dpi: dto.dpi,
-      email: dto.email,
-      phoneNumber: dto.phoneNumber ?? null,
-      passwordHash,
-      role: Role.USER,
-    })
 
+    let user: Awaited<ReturnType<typeof this.usersService.create>>
+    try {
+      user = await this.usersService.create({
+        fullName: dto.fullName,
+        dpi: dto.dpi,
+        email: dto.email,
+        phoneNumber: dto.phoneNumber ?? null,
+        passwordHash,
+        role: Role.USER,
+      })
+    } catch (err: unknown) {
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        (err as { code: unknown }).code === '23505'
+      ) {
+        const detail = 'detail' in err ? String((err as { detail: unknown }).detail) : ''
+        if (detail.includes('(dpi)')) {
+          this.logger.warn(`Registration failed: DPI already registered [${AuthService.maskEmail(dto.email)}]`)
+          throw new ConflictException('DPI already registered')
+        }
+      }
+      throw err
+    }
+
+    this.logger.log(`User registered: ${AuthService.maskEmail(dto.email)}`)
     return this.issueTokens({
       sub: user.id,
       email: user.email,
@@ -62,16 +90,19 @@ export class AuthService {
     const user = await this.usersService.findByEmail(dto.email)
 
     if (!user) {
+      this.logger.warn(`Login failed: user not found [${AuthService.maskEmail(dto.email)}]`)
       throw new UnauthorizedException('Invalid credentials')
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
+      this.logger.warn(`Login blocked: account locked [${AuthService.maskEmail(dto.email)}]`)
       throw new HttpException('Account temporarily locked due to too many failed attempts', HttpStatus.TOO_MANY_REQUESTS)
     }
 
     const isValid = await argon2.verify(user.passwordHash, dto.password)
 
     if (!isValid) {
+      this.logger.warn(`Login failed: invalid password [${AuthService.maskEmail(dto.email)}] attempts=${user.failedLoginAttempts + 1}`)
       await this.usersService.incrementFailedLogins(
         user.id,
         AuthService.MAX_FAILED_ATTEMPTS,
@@ -83,6 +114,7 @@ export class AuthService {
     await this.usersService.resetFailedLogins(user.id)
     await this.usersService.updateLastLogin(user.id)
 
+    this.logger.log(`Login success: [${AuthService.maskEmail(dto.email)}] userId=${user.id}`)
     return this.issueTokens({
       sub: user.id,
       email: user.email,
@@ -100,11 +132,13 @@ export class AuthService {
       role: payload.role,
     })
     await this.refreshTokensService.rotate(payload.sub, refreshToken, nextTokens.refreshToken)
+    this.logger.log(`Token refreshed for userId=${payload.sub}`)
     return nextTokens
   }
 
   async logout(userId: string): Promise<void> {
     await this.refreshTokensService.revokeAllForUser(userId)
+    this.logger.log(`User logged out, tokens revoked: userId=${userId}`)
   }
 
   private async issueTokens(payload: AccessTokenPayload): Promise<AuthTokens> {

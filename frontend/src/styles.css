@@ -58,6 +58,8 @@ img {
   inset: 0 0 auto;
   z-index: 60;
   padding: 1rem 1.25rem;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .poster-nav__shell {
@@ -227,7 +229,7 @@ img {
 }
 
 .poster-hero__logo {
-  width: clamp(8rem, 18vw, 12rem);
+  width: clamp(6rem, 14vw, 9rem);
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.45));
 }
 
@@ -1726,7 +1728,7 @@ img {
   }
 
   .poster-hero__logo {
-    width: clamp(5.75rem, 22vw, 8.75rem);
+
   }
 
   .poster-hero__municipality span {

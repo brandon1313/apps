@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { MoreThanOrEqual, Repository } from 'typeorm'
 import { Role } from '@/common/enums/role.enum'
@@ -28,6 +28,8 @@ type DashboardActivity = {
 
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name)
+
   constructor(
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
@@ -44,6 +46,7 @@ export class DashboardService {
   ) {}
 
   async getSummary(user: AccessTokenPayload): Promise<DashboardSummary> {
+    this.logger.log(`Dashboard requested: userId=${user.sub} role=${user.role}`)
     if (user.role === Role.ADMIN) {
       return this.getAdminSummary()
     }
@@ -102,6 +105,7 @@ export class DashboardService {
     ])
 
     const pendingPaymentsCount = pendingFinesCount + pendingWaterBillsCount + pendingOrnatoCount
+    this.logger.log(`Admin dashboard loaded: paymentsToday=${successfulPaymentsTodayCount} pendingPayments=${pendingPaymentsCount}`)
     const recentActivity = [
       ...recentPayments.map<DashboardActivity>((payment) => ({
         id: `payment-${payment.id}`,
@@ -192,6 +196,7 @@ export class DashboardService {
       .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
       .slice(0, 6)
 
+    this.logger.log(`User dashboard loaded: userId=${user.sub} pendingPayments=${pendingPaymentsCount}`)
     return {
       publishedNewsCount,
       successfulPaymentsTodayCount,

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { PaymentType } from '@/modules/payments/entities/payment.entity'
@@ -15,6 +15,8 @@ export type OrnatoPaymentResult = {
 
 @Injectable()
 export class OrnatoService {
+  private readonly logger = new Logger(OrnatoService.name)
+
   constructor(
     @InjectRepository(OrnatoTicketEntity)
     private readonly ornatoRepository: Repository<OrnatoTicketEntity>,
@@ -29,10 +31,13 @@ export class OrnatoService {
       dpi: dto.dpi,
       amount: dto.amount.toFixed(2),
     })
-    return this.ornatoRepository.save(entity)
+    const saved = await this.ornatoRepository.save(entity)
+    this.logger.log(`Ornato ticket created: id=${saved.id} dpi=${saved.dpi}`)
+    return saved
   }
 
   async pay(id: string, userId?: string): Promise<OrnatoPaymentResult> {
+    this.logger.log(`Ornato payment initiated: ticketId=${id} userId=${userId ?? 'anonymous'}`)
     const ticket = await this.findByIdOrFail(id)
 
     const payment = await this.paymentsService.createPendingPayment({
@@ -49,6 +54,7 @@ export class OrnatoService {
     ticket.status = OrnatoTicketStatus.PAID
     ticket.paymentId = completedPayment.id
     const savedTicket = await this.ornatoRepository.save(ticket)
+    this.logger.log(`Ornato paid: ticketId=${id} paymentRef=${completedPayment.reference}`)
     return {
       ticket: savedTicket,
       receipt: createOrnatoReceiptDocument(savedTicket, completedPayment),
@@ -56,9 +62,11 @@ export class OrnatoService {
   }
 
   async getReceipt(id: string): Promise<OrnatoReceiptDocument> {
+    this.logger.log(`Ornato receipt requested: ticketId=${id}`)
     const ticket = await this.findByIdOrFail(id)
 
     if (ticket.status !== OrnatoTicketStatus.PAID || !ticket.paymentId) {
+      this.logger.warn(`Ornato receipt not available: ticketId=${id} status=${ticket.status}`)
       throw new NotFoundException('Ornato receipt not available')
     }
 

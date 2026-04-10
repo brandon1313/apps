@@ -14,7 +14,7 @@ const envSchema = z.object({
   JWT_REFRESH_TTL_DAYS: z.coerce.number().default(30),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   AUTH_THROTTLE_TTL: z.coerce.number().default(900_000),
-  AUTH_THROTTLE_LIMIT: z.coerce.number().default(5),
+  AUTH_THROTTLE_LIMIT: z.coerce.number().default(10),
 })
 
 export type AppEnv = z.infer<typeof envSchema>

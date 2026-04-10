@@ -144,7 +144,7 @@ export function RichTextEditor({ value, onChange, placeholder, readOnly = false 
     }
     // External change: load content or clear on reset
     if (value) {
-      editor.commands.setContent(value, false)
+      editor.commands.setContent(value)
     } else {
       editor.commands.clearContent(false)
     }

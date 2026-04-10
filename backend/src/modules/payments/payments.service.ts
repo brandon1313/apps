@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { randomUUID } from 'crypto'
@@ -16,6 +16,8 @@ type CreatePaymentInput = {
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name)
+
   constructor(
     @InjectRepository(PaymentEntity)
     private readonly paymentRepository: Repository<PaymentEntity>,
@@ -35,10 +37,13 @@ export class PaymentsService {
       metadata: input.metadata,
     })
 
-    return this.paymentRepository.save(payment)
+    const saved = await this.paymentRepository.save(payment)
+    this.logger.log(`Payment created: ref=${saved.reference} type=${saved.type} amount=${saved.amount} GTQ`)
+    return saved
   }
 
   async executeMockPayment(payment: PaymentEntity): Promise<PaymentEntity> {
+    this.logger.log(`Payment processing: ref=${payment.reference} amount=${payment.amount} GTQ`)
     const result = await this.paymentProcessorService.processMockPayment({
       amount: Number(payment.amount),
       currency: payment.currency,
@@ -49,6 +54,8 @@ export class PaymentsService {
     payment.externalTransactionId = result.externalTransactionId
     payment.processedAt = result.processedAt
 
-    return this.paymentRepository.save(payment)
+    const saved = await this.paymentRepository.save(payment)
+    this.logger.log(`Payment succeeded: ref=${saved.reference} externalId=${saved.externalTransactionId}`)
+    return saved
   }
 }

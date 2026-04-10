@@ -75,8 +75,8 @@ export function MunicipalSidebar({
       }
       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       className={[
-        'relative flex min-h-screen shrink-0 flex-col overflow-visible border-r border-white/10 bg-[#050a41] text-white',
-        isMobile ? 'w-[min(88vw,22rem)]' : '',
+        'relative flex shrink-0 flex-col border-r border-white/10 bg-[#050a41] text-white',
+        isMobile ? 'h-full w-[min(88vw,22rem)] overflow-y-auto' : 'min-h-screen overflow-visible',
       ].join(' ')}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(63,178,255,0.18),transparent_28%),linear-gradient(180deg,rgba(7,11,82,0),rgba(2,5,36,0.75))]" />

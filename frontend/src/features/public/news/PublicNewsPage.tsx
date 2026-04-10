@@ -25,7 +25,7 @@ export function PublicNewsPage() {
   return (
     <div className="poster-app">
       <PosterNav />
-      <main id="news-main" className="poster-shell py-12">
+      <main id="news-main" className="poster-shell pt-28 pb-12">
         <h1 className="poster-section__heading mb-8">
           <span className="poster-kicker">Portal municipal</span>
           <span className="block text-3xl font-black tracking-tight text-white">Noticias publicas</span>

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { NewsPostEntity, NewsStatus } from './entities/news-post.entity'
@@ -14,6 +14,8 @@ type CreateNewsInput = {
 
 @Injectable()
 export class NewsService {
+  private readonly logger = new Logger(NewsService.name)
+
   constructor(
     @InjectRepository(NewsPostEntity)
     private readonly newsRepository: Repository<NewsPostEntity>,
@@ -25,7 +27,9 @@ export class NewsService {
       status: NewsStatus.DRAFT,
     })
 
-    return this.newsRepository.save(entity)
+    const saved = await this.newsRepository.save(entity)
+    this.logger.log(`News post created: id=${saved.id} slug=${saved.slug} authorId=${input.authorId}`)
+    return saved
   }
 
   async findPublished(): Promise<NewsPostEntity[]> {
@@ -68,8 +72,11 @@ export class NewsService {
 
   async updateStatus(id: string, status: NewsStatus): Promise<NewsPostEntity> {
     const post = await this.findByIdOrFail(id)
+    const previousStatus = post.status
     post.status = status
     post.publishedAt = status === NewsStatus.PUBLISHED ? new Date() : post.publishedAt
-    return this.newsRepository.save(post)
+    const saved = await this.newsRepository.save(post)
+    this.logger.log(`News status changed: id=${id} ${previousStatus} → ${status}`)
+    return saved
   }
 }

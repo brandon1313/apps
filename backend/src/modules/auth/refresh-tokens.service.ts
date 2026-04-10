@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import * as argon2 from 'argon2'
@@ -6,6 +6,8 @@ import { RefreshTokenEntity } from './entities/refresh-token.entity'
 
 @Injectable()
 export class RefreshTokensService {
+  private readonly logger = new Logger(RefreshTokensService.name)
+
   constructor(
     @InjectRepository(RefreshTokenEntity)
     private readonly refreshTokenRepository: Repository<RefreshTokenEntity>,
@@ -21,7 +23,9 @@ export class RefreshTokensService {
       ipAddress: context?.ipAddress ?? null,
     })
 
-    return this.refreshTokenRepository.save(refreshTokenEntity)
+    const saved = await this.refreshTokenRepository.save(refreshTokenEntity)
+    this.logger.log(`Refresh token issued for userId=${userId}`)
+    return saved
   }
 
   async rotate(userId: string, currentToken: string, nextToken: string): Promise<void> {
@@ -34,6 +38,7 @@ export class RefreshTokensService {
     const matchingToken = await this.findMatchingToken(activeTokens, currentToken)
 
     if (!matchingToken || matchingToken.revokedAt) {
+      this.logger.warn(`Refresh token rotation rejected: invalid or revoked token for userId=${userId}`)
       throw new UnauthorizedException('Refresh token is invalid')
     }
 
@@ -50,6 +55,7 @@ export class RefreshTokensService {
     const savedNextEntity = await this.refreshTokenRepository.save(nextEntity)
     matchingToken.replacedByTokenId = savedNextEntity.id
     await this.refreshTokenRepository.save(matchingToken)
+    this.logger.log(`Refresh token rotated for userId=${userId}`)
   }
 
   async revokeAllForUser(userId: string): Promise<void> {
@@ -59,6 +65,7 @@ export class RefreshTokensService {
       .set({ revokedAt: new Date() })
       .where('user_id = :userId AND revoked_at IS NULL', { userId })
       .execute()
+    this.logger.log(`All refresh tokens revoked for userId=${userId}`)
   }
 
   private async findMatchingToken(

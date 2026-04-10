@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { PaymentType } from '@/modules/payments/entities/payment.entity'
@@ -9,6 +9,8 @@ import { CreateFineDto } from './dto/create-fine.dto'
 
 @Injectable()
 export class FinesService {
+  private readonly logger = new Logger(FinesService.name)
+
   constructor(
     @InjectRepository(TrafficFineEntity)
     private readonly finesRepository: Repository<TrafficFineEntity>,
@@ -27,10 +29,13 @@ export class FinesService {
       status: FineStatus.PENDING,
       issuedByAgentId: agentId ?? null,
     })
-    return this.finesRepository.save(fine)
+    const saved = await this.finesRepository.save(fine)
+    this.logger.log(`Fine created: id=${saved.id} plate=${saved.plateType}-${saved.plateNumber} amount=${saved.amount} GTQ`)
+    return saved
   }
 
   async search(dto: SearchFinesDto): Promise<TrafficFineEntity[]> {
+    this.logger.log(`Fine search: plateType=${dto.plateType} plateNumber=${dto.plateNumber}`)
     return this.finesRepository.find({
       where: {
         plateType: dto.plateType,
@@ -51,6 +56,7 @@ export class FinesService {
   }
 
   async payFine(id: string, userId?: string): Promise<TrafficFineEntity> {
+    this.logger.log(`Fine payment initiated: fineId=${id} userId=${userId ?? 'anonymous'}`)
     const fine = await this.findByIdOrFail(id)
     const payment = await this.paymentsService.createPendingPayment({
       type: PaymentType.TRAFFIC_FINE,
@@ -66,7 +72,9 @@ export class FinesService {
     const completedPayment = await this.paymentsService.executeMockPayment(payment)
     fine.status = FineStatus.PAID
     fine.paymentId = completedPayment.id
-    return this.finesRepository.save(fine)
+    const saved = await this.finesRepository.save(fine)
+    this.logger.log(`Fine paid: fineId=${id} paymentRef=${completedPayment.reference}`)
+    return saved
   }
 
   async seedDemoData(): Promise<void> {

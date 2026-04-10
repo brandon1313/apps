@@ -1,5 +1,5 @@
 export const navItems = [
-  ['Inicio', '#hero'],
+  ['Inicio', '/#hero'],
   ['Identidad', '#identity'],
   ['Tradiciones', '#traditions'],
   ['Noticias', '#news'],
@@ -8,7 +8,7 @@ export const navItems = [
 ] as const
 
 export const municipalLogoUrl =
-  'https://munisanjuansac.org/msj/wp-content/uploads/2025/08/cropped-cropped-LOGO-MUNI-AZUL-scaled-1.png'
+  'https://munisanjuansac.org/msj/wp-content/uploads/2023/11/LOGO-45-DE-ANCHO-POR-50-DE-ALTO-DERECHO-E-IZQUIERDO-921x1024.png'
 
 export const crestUrl = 'https://munisanjuansac.org/msj/wp-content/uploads/2025/08/escudo-96x96.png'
 

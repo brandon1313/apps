@@ -34,7 +34,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ auth: { limit: 5, ttl: 900_000 } })
+  @Throttle({ auth: { limit: 10, ttl: 900_000 } })
   @Post('register')
   async register(
     @Body() dto: RegisterDto,

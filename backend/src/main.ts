@@ -1,9 +1,11 @@
-import { ValidationPipe } from '@nestjs/common'
+import { Logger, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { ConfigService } from '@nestjs/config'
 import * as cookieParser from 'cookie-parser'
 import { json, urlencoded } from 'express'
 import { AppModule } from './app.module'
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter'
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor'
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bodyParser: false })
@@ -17,6 +19,8 @@ async function bootstrap(): Promise<void> {
     origin: config.getOrThrow<string>('FRONTEND_URL'),
     credentials: true,
   })
+  app.useGlobalFilters(new AllExceptionsFilter())
+  app.useGlobalInterceptors(new LoggingInterceptor())
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -25,7 +29,9 @@ async function bootstrap(): Promise<void> {
     }),
   )
 
-  await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000)
+  const port = process.env.PORT ? Number(process.env.PORT) : 3000
+  await app.listen(port)
+  new Logger('Bootstrap').log(`Server listening on port ${port} [NODE_ENV=${process.env.NODE_ENV ?? 'development'}]`)
 }
 
 void bootstrap()

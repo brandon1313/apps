@@ -1,4 +1,4 @@
-import { IsObject, IsString, IsUrl, MaxLength } from 'class-validator'
+import { IsObject, IsString, Matches, MaxLength } from 'class-validator'
 
 export class CreateNewsDto {
   @IsString()
@@ -12,7 +12,10 @@ export class CreateNewsDto {
   @IsString()
   summary!: string
 
-  @IsUrl()
+  @IsString()
+  @Matches(/^(https?:\/\/.+|data:image\/.+;base64,.+)/, {
+    message: 'coverImageUrl must be a valid URL or a base64 data URL',
+  })
   coverImageUrl!: string
 
   @IsObject()
